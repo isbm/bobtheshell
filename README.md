@@ -5,7 +5,7 @@ A fork from shellder theme as an attempt to clone bobthefish theme for zsh.
 
 Installation
 --------
-You can just enable bobtheshell in zsh as is:
+You can just enable bobtheshell in zsh as is, after copying `bobtheshell.zsh-theme` to your `.oh-my-zsh/themes` path:
 
 ### Zsh
 
