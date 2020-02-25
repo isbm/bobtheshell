@@ -9,11 +9,19 @@ CURRENT_BG='NONE'
 SHELLDER_CONTEXT_BG=${SHELLDER_CONTEXT_BG:-238}
 SHELLDER_CONTEXT_FG=${SHELLDER_CONTEXT_FG:-245}
 
+# Directory
 BTS_DIR_BG=${BTS_DIR_BG:-240}
 BTS_DIR_FG=${BTS_DIR_FG:-250}
+
+# Directory read-only
 BTS_DIR_RO_BG=${BTS_DIR_RO_BG:-088}
 BTS_DIR_RO_FG=${BTS_DIR_RO_FG:-250}
 
+# Chunk of inner Git repo directory
+BTS_AFTER_DIR_BG=${BTS_AFTER_DIR_BG:-237}
+BTS_AFTER_DIR_FG=${BTS_AFTER_DIR_FG:-246}
+
+# Clean background
 SHELLDER_GIT_CLEAN_BG=${SHELLDER_GIT_CLEAN_BG:-034}
 SHELLDER_GIT_CLEAN_FG=${SHELLDER_GIT_CLEAN_FG:-'black'}
 
@@ -197,10 +205,28 @@ prompt_hg() {
   fi
 }
 
+# Return Git top level
+function git_top_path() {
+    # Git top level
+    git_top_path=$(git rev-parse --show-toplevel 2>/dev/null)
+    if [[ -n $git_top_path ]]; then
+	git_top_path="~${git_top_path#$HOME}"
+    else
+	git_top_path=""
+    fi
+    echo $git_top_path
+}
+
 # Turn "/some/quite/very/long/path" into "/s/q/v/l/path" without
 # relying on an external optional plugin
 function fish_path() {
+    gtp=$1
     local paths=(${PWD/$HOME/\~}) 'cur_dir'
+
+    if [[ ! -z $gtp ]]; then
+	paths=$gtp
+    fi
+
     paths=(${(s:/:)paths})
 
     for idx in {1..$#paths}
@@ -233,9 +259,20 @@ prompt_dir() {
     if [[ -n $SHELLDER_KEEP_PATH ]]; then
         dir='%~'
     else
-        dir=$(fish_path)
+        dir=$(fish_path $(git_top_path))
     fi
   prompt_segment $dir_bg $BTS_DIR_FG $dir
+}
+
+prompt_inner_dir() {
+    gtp=$(git rev-parse --show-toplevel 2>/dev/null)
+    if [[ ! -z $gtp ]]; then
+	ctp=$(pwd)
+	ctp="${ctp#$gtp}"
+	if [[ ! -z $ctp ]]; then
+	    prompt_segment $BTS_AFTER_DIR_BG $BTS_AFTER_DIR_FG  "${ctp:1:#ctp}" "$symbols"
+	fi
+    fi
 }
 
 # Virtualenv: current working virtualenv
@@ -283,6 +320,7 @@ build_prompt() {
   prompt_dir
   prompt_git
   prompt_hg
+  prompt_inner_dir
   prompt_end
 }
 
