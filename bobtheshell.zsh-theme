@@ -9,8 +9,10 @@ CURRENT_BG='NONE'
 SHELLDER_CONTEXT_BG=${SHELLDER_CONTEXT_BG:-238}
 SHELLDER_CONTEXT_FG=${SHELLDER_CONTEXT_FG:-245}
 
-SHELLDER_DIRECTORY_BG=${SHELLDER_DIRECTORY_BG:-240}
-SHELLDER_DIRECTORY_FG=${SHELLDER_DIRECTORY_FG:-250}
+BTS_DIR_BG=${BTS_DIR_BG:-240}
+BTS_DIR_FG=${BTS_DIR_FG:-250}
+BTS_DIR_RO_BG=${BTS_DIR_RO_BG:-088}
+BTS_DIR_RO_FG=${BTS_DIR_RO_FG:-250}
 
 SHELLDER_GIT_CLEAN_BG=${SHELLDER_GIT_CLEAN_BG:-034}
 SHELLDER_GIT_CLEAN_FG=${SHELLDER_GIT_CLEAN_FG:-'black'}
@@ -33,8 +35,11 @@ SHELLDER_GIT_ADDED_FG=${SHELLDER_GIT_ADDED_FG:-015}
 SHELLDER_VIRTUALENV_BG=${SHELLDER_VIRTUALENV_BG:-025}
 SHELLDER_VIRTUALENV_FG=${SHELLDER_VIRTUALENV_FG:-214}
 
-SHELLDER_STATUS_BG=${SHELLDER_STATUS_BG:-236}
-SHELLDER_STATUS_FG=${SHELLDER_STATUS_FG:-'default'}
+# Status colors
+BTS_STATUS_USER_BG=${BTS_STATUS_USER_BG:-236}
+BTS_STATUS_USER_FG=${BTS_STATUS_USER_FG:-'default'}
+BTS_STATUS_ROOT_BG=${BTS_STATUS_ROOT_BG:-052}
+BTS_STATUS_ROOT_FG=${BTS_STATUS_ROOT_FG:-'default'}
 
 # Special Powerline characters
 () {
@@ -207,18 +212,30 @@ function fish_path() {
       fi
       cur_dir+='/'
     done
-    echo ${cur_dir: :-1}
+    if [[ $cur_dir = $'~'* ]]; then
+	echo ${cur_dir: :-1}
+    else
+	echo "/${cur_dir: :-1}"
+    fi
 }
 
 # Dir: current working directory
 prompt_dir() {
     local dir
+    local dir_bg
+
+    if [[ ! -w "$(pwd)" ]]; then
+	dir_bg=$BTS_DIR_RO_BG
+    else
+	dir_bg=$BTS_DIR_BG
+    fi
+
     if [[ -n $SHELLDER_KEEP_PATH ]]; then
         dir='%~'
     else
         dir=$(fish_path)
     fi
-  prompt_segment $SHELLDER_DIRECTORY_BG $SHELLDER_DIRECTORY_FG $dir
+  prompt_segment $dir_bg $BTS_DIR_FG $dir
 }
 
 # Virtualenv: current working virtualenv
@@ -231,13 +248,27 @@ prompt_virtualenv() {
 
 # Status: error + root + background jobs
 prompt_status() {
-  local symbols
-  symbols=()
-  [[ $RETVAL -ne 0 ]] && symbols+="%{%F{red}%}$RETVAL"
-  [[ $UID -eq 0 ]] && symbols+="%{%F{yellow}%}⚡"
-  [[ $(jobs -l | wc -l) -gt 0 ]] && symbols+="%{%F{cyan}%}⚙"
+    local symbols
+    local status_bg
+    local status_fg
 
-  [[ -n "$symbols" ]] && prompt_segment $SHELLDER_STATUS_BG $SHELLDER_STATUS_FG "$symbols"
+    symbols=()
+
+    if [[ $UID -eq 0 ]]; then
+	symbols+="%{%F{yellow}%}!"
+	status_bg=$BTS_STATUS_ROOT_BG
+	status_fg=$BTS_STATUS_ROOT_FG
+    else
+	status_bg=$BTS_STATUS_USER_BG
+	status_fg=$BTS_STATUS_USER_FG
+    fi
+
+    if [[ $RETVAL -ne 0 ]]; then
+	symbols+="%{%F{196}%}$RETVAL"
+    fi
+
+    [[ $(jobs -l | wc -l) -gt 0 ]] && symbols+="%{%F{cyan}%}⚙"
+    [[ -n "$symbols" ]] && prompt_segment $status_bg $status_fg "$symbols"
 }
 
 
