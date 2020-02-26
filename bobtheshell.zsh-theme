@@ -9,13 +9,12 @@ CURRENT_BG='NONE'
 SHELLDER_CONTEXT_BG=${SHELLDER_CONTEXT_BG:-238}
 SHELLDER_CONTEXT_FG=${SHELLDER_CONTEXT_FG:-245}
 
-# Directory
+# Directories/path
 BTS_DIR_BG=${BTS_DIR_BG:-240}
 BTS_DIR_FG=${BTS_DIR_FG:-250}
-
-# Directory read-only
 BTS_DIR_RO_BG=${BTS_DIR_RO_BG:-088}
 BTS_DIR_RO_FG=${BTS_DIR_RO_FG:-250}
+BTS_DIR_HL_FG=${BTS_DIR_HL_FG:-230}
 
 # Chunk of inner Git repo directory
 BTS_AFTER_DIR_BG=${BTS_AFTER_DIR_BG:-237}
@@ -63,9 +62,9 @@ prompt_segment() {
     [[ -n $1 ]] && bg="%K{$1}" || bg="%k"
     [[ -n $2 ]] && fg="%F{$2}" || fg="%f"
     if [[ $CURRENT_BG != 'NONE' && $1 != $CURRENT_BG ]]; then
-	echo -n " %{$bg%F{$CURRENT_BG}%}$SEGMENT_SEPARATOR%{$fg%} "
+	echo -n " %b%{$bg%F{$CURRENT_BG}%}$SEGMENT_SEPARATOR%{$fg%} "
     else
-	echo -n "%{$bg%}%{$fg%} "
+	echo -n "%b%{$bg%}%{$fg%} "
     fi
     CURRENT_BG=$1
     [[ -n $3 ]] && echo -n $3
@@ -106,7 +105,7 @@ prompt_git() {
     repo_path=$(git rev-parse --git-dir 2>/dev/null)
 
     if [[ -n $repo_path ]]; then
-	local PL_BRANCH_CHAR dirty bgcolor fgcolor mode ref
+	local PL_BRANCH_CHAR dirty bgcolor fgcolor mode ref clean
 
 	() {
 	    local LC_ALL="" LC_CTYPE="en_US.UTF-8"
@@ -136,6 +135,7 @@ prompt_git() {
 	    bgcolor=$SHELLDER_GIT_UNPUSHED_BG
 	    fgcolor=$SHELLDER_GIT_UNPUSHED_FG
 	else
+	    clean="1"
 	    bgcolor=$SHELLDER_GIT_CLEAN_BG
 	    fgcolor=$SHELLDER_GIT_CLEAN_FG
 	fi
@@ -149,24 +149,21 @@ prompt_git() {
 	    mode=" >R>"
 	fi
 
-	# vcs_info is too slow with MSYS2 (~300ms with i7-6770K + SSD)
-	if [[ -z $MSYS ]]; then
-	    autoload -Uz vcs_info
-	    zstyle ':vcs_info:*' enable git
-	    zstyle ':vcs_info:*' check-for-changes true
-	    zstyle ':vcs_info:*' stagedstr '✚'
-	    zstyle ':vcs_info:*' unstagedstr '●'
-	    zstyle ':vcs_info:*' formats ' %u%c'
-	    zstyle ':vcs_info:*' actionformats ' %u%c'
-	    vcs_info
-	else
-	    if [[ -n $dirty ]]; then
-		vcs_info_msg_0_=' !'
-	    fi
-	fi
+	autoload -Uz vcs_info
+	zstyle ':vcs_info:*' enable git
+	zstyle ':vcs_info:*' check-for-changes true
+	zstyle ':vcs_info:*' stagedstr '✚'
+	zstyle ':vcs_info:*' unstagedstr '●'
+	zstyle ':vcs_info:*' formats ' %u%c'
+	zstyle ':vcs_info:*' actionformats ' %u%c'
+	vcs_info
 
 	ref=$(git symbolic-ref HEAD 2> /dev/null) || ref="➦ $(git rev-parse --short HEAD 2> /dev/null)"
-	echo -n "${ref/refs\/heads\//$PL_BRANCH_CHAR }${vcs_info_msg_0_%% }${mode}"
+	if [[ ! -z $unpushed || ! -z $clean ]]; then
+	    echo -n "${ref/refs\/heads\//$PL_BRANCH_CHAR }${vcs_info_msg_0_%% }${mode}"
+	else
+	    echo -n "$PL_BRANCH_CHAR${vcs_info_msg_0_%% }${mode}"
+	fi
     fi
 }
 
@@ -234,7 +231,7 @@ function fish_path() {
       if [[ idx -lt $#paths ]]; then
         cur_dir+="${paths[idx]:0:1}"
       else
-        cur_dir+="${paths[idx]}"
+        cur_dir+="%B%F{$BTS_DIR_HL_FG}${paths[idx]}"
       fi
       cur_dir+='/'
     done
