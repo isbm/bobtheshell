@@ -86,8 +86,13 @@ prompt_end() {
 # Prompt functions
 #
 
-# Context: user@hostname (who am I and where am I)
+# Context: user@hostname (who am I and where am I).
+# This shows up only on remote machines or different user (su -).
 prompt_context() {
+    if [[ "$USER" == "$(whoami)" && ! -n "$SSH_CLIENT" ]]; then
+	return
+    fi
+
     local prompt
     if [[ "$USER" != "$DEFAULT_USER" || -n "$SSH_CLIENT" ]]; then
 	if [[ "$USER" != "$DEFAULT_USER" ]]; then
