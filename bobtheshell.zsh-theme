@@ -159,11 +159,18 @@ prompt_git() {
 	vcs_info
 
 	ref=$(git symbolic-ref HEAD 2> /dev/null) || ref="➦ $(git rev-parse --short HEAD 2> /dev/null)"
-	if [[ ! -z $unpushed || ! -z $clean ]]; then
-	    echo -n "${ref/refs\/heads\//$PL_BRANCH_CHAR }${vcs_info_msg_0_%% }${mode}"
-	else
-	    echo -n "$PL_BRANCH_CHAR${vcs_info_msg_0_%% }${mode}"
-	fi
+	local branch=$(shorten_word ${ref/refs\/heads\//} 15)
+	echo -n "$PL_BRANCH_CHAR ${branch}${vcs_info_msg_0_%% }${mode}"
+    fi
+}
+
+shorten_word() {
+    local orig=$1
+    local limit=$2
+    if [[ ${#orig} -ge $limit ]]; then
+	echo "${${orig}:0:$limit}…"
+    else
+	echo $orig
     fi
 }
 
@@ -319,6 +326,7 @@ build_prompt() {
   #prompt_hg
   prompt_inner_dir
   prompt_end
+  echo "%b"
 }
 
 export VIRTUAL_ENV_DISABLE_PROMPT="true"
