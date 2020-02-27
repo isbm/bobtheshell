@@ -247,7 +247,9 @@ function fish_path() {
       fi
       cur_dir+='/'
     done
-    if [[ $cur_dir = $'~'* ]]; then
+
+    # Don't print "/" in front of ~.
+    if [[ ${cur_dir#*"~"} != "$cur_dir" ]]; then
 	echo ${cur_dir: :-1}
     else
 	echo "/${cur_dir: :-1}"
